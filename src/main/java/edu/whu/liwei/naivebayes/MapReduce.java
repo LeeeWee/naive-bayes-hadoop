@@ -15,6 +15,11 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
+/**
+ * 
+ * @author Liwei
+ *
+ */
 public class MapReduce {
 	
 	/**
@@ -83,12 +88,12 @@ public class MapReduce {
 	
 	/**
 	 * the third MapReduce, used to calculate condition probability
-	 * input ClassNameDocNumsReducer file and set conf with ClassNameDocNumsFilePath
+	 * input ClassWordDocsReducer file and set conf with ClassNameDocNumsFilePath
 	 * output <<className:word>, conditionProbability>
 	 * @author liwei
 	 *
 	 */
-	public static class ConditionProbablyMapper extends Mapper<Text, IntWritable, Text, DoubleWritable> {
+	public static class ConditionProbablilityMapper extends Mapper<Text, IntWritable, Text, DoubleWritable> {
 		/**
 		 * map doc nums to each class
 		 */
@@ -96,9 +101,9 @@ public class MapReduce {
 		public void setup(Context context) {
 			Configuration conf = context.getConfiguration();
 			// get classDocNums
-			String ClassNameDocNumsFilePath = conf.get("ClassNameDocNumsFilePath");
+			String ClassNameDocNumsFilePath = conf.get("classDocNumsFilePath");
 			try {
-				classDocNumsMap = NaiveBayes.getClassDocNums(ClassNameDocNumsFilePath);
+				classDocNumsMap = Probability.getClassDocNums(ClassNameDocNumsFilePath);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -114,7 +119,7 @@ public class MapReduce {
 		}
 	}
 	
-	public static class ConditionProbablyReducer extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
+	public static class ConditionProbablilityReducer extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
 		public void reduce(Text key, Iterable<DoubleWritable> values, Context context) throws IOException, InterruptedException {
 			double sum = 0;
 			for(DoubleWritable value : values){
@@ -136,22 +141,22 @@ public class MapReduce {
 		/**
 		 * class probably, P(c) = doc_nums(c) / total_doc_nums
 		 */
-		private static HashMap<String, Double> classProbably;
+		private static HashMap<String, Double> classProbablility;
 		/**
 		 * condition probably, P(tk|c) = (doc_containing_tk_nums(c) + 1) / (doc_nums(c) + 2)
 		 */
-		private static HashMap<String, Double> wordsProbably;
+		private static HashMap<String, Double> wordsProbablility;
 		
 		// initial classProbably and wordsProbably
 		public void setup(Context context) {
 			Configuration conf = context.getConfiguration();
 			// get classDocNums and conditionProbably
-			String ClassNameDocNumsFilePath = conf.get("ClassNameDocNumsFilePath");
-			String ConditionProbablyFilePath = conf.get("ConditionProbablyFilePath");
+			String ClassNameDocNumsFilePath = conf.get("classDocNumsFilePath");
+			String ConditionProbablyFilePath = conf.get("conditionProbablyFilePath");
 			try {
-				HashMap<String, Integer> classDocNumsMap = NaiveBayes.getClassDocNums(ClassNameDocNumsFilePath);
-				classProbably = NaiveBayes.getPriorProbably(classDocNumsMap);
-				wordsProbably = NaiveBayes.getWordsProbably(ConditionProbablyFilePath, classDocNumsMap);
+				HashMap<String, Integer> classDocNumsMap = Probability.getClassDocNums(ClassNameDocNumsFilePath);
+				classProbablility = Probability.getPriorProbablility(classDocNumsMap);
+				wordsProbablility = Probability.getWordsProbablility(ConditionProbablyFilePath, classDocNumsMap);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -162,17 +167,17 @@ public class MapReduce {
 			int splitIndex2 = value.toString().indexOf(",");
 			String docId = value.toString().substring(0, splitIndex1);
 			String className = value.toString().substring(splitIndex1 + 1, splitIndex2 + 1);
-			for(Entry<String, Double> entry:classProbably.entrySet()){ // iterate all class
+			for(Entry<String, Double> entry:classProbablility.entrySet()){ // iterate all class
 				String mykey = entry.getKey();
 				double tempValue = Math.log(entry.getValue()); // convert the predict value calculated by product to sum of log				
 				StringTokenizer itr = new StringTokenizer(value.toString());				
 				while(itr.hasMoreTokens()){ // iterate all words				
 					String tempkey = mykey + ":" + itr.nextToken(); // create key-value map <class:word>, and get the probability						
-					if(wordsProbably.containsKey(tempkey)){
+					if(wordsProbablility.containsKey(tempkey)){
 						// if <class:word> exists in wordsProbably, get the probability
-						tempValue += Math.log(wordsProbably.get(tempkey));
+						tempValue += Math.log(wordsProbablility.get(tempkey));
 					}else{ // if doesn't exist, using the probability of class probability
-						tempValue += Math.log(wordsProbably.get(mykey));						
+						tempValue += Math.log(wordsProbablility.get(mykey));						
 					}
 				}
 				context.write(new Text(docId), new Text(mykey + ":" + tempValue)); // <docID,<class:probably>>
