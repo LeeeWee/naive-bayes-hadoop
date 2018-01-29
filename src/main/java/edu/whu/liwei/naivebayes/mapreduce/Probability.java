@@ -1,4 +1,4 @@
-package edu.whu.liwei.naivebayes;
+package edu.whu.liwei.naivebayes.mapreduce;
 
 import java.io.IOException;
 import java.net.URI;
@@ -29,8 +29,9 @@ public class Probability {
 	public static HashMap<String, Integer> getClassDocNums(String classNameDocNumsFilePath) throws IOException {
 		HashMap<String, Integer> classDocNums = new HashMap<String, Integer>();
 		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(URI.create(classNameDocNumsFilePath), conf);
-		Path path = new Path(classNameDocNumsFilePath);
+		String classNameDocNumsPath = classNameDocNumsFilePath + "/part-r-00000";
+		FileSystem fs = FileSystem.get(URI.create(classNameDocNumsPath), conf);
+		Path path = new Path(classNameDocNumsPath);
 		SequenceFile.Reader reader = null;
 		try {
 			reader = new SequenceFile.Reader(fs, path, conf); 
@@ -66,8 +67,9 @@ public class Probability {
 	public static HashMap<String, Double> getWordsProbablility(String conditionProbablyFilePath) throws IOException {
 		HashMap<String, Double> wordsProbablility = new HashMap<String, Double>();
 		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(URI.create(conditionProbablyFilePath), conf);
-		Path path = new Path(conditionProbablyFilePath);
+		String conditionProbablyPath = conditionProbablyFilePath + "/part-r-00000";
+		FileSystem fs = FileSystem.get(URI.create(conditionProbablyPath), conf);
+		Path path = new Path(conditionProbablyPath);
 		SequenceFile.Reader reader = null;
 		try {
 			reader = new SequenceFile.Reader(fs, path, conf); 
