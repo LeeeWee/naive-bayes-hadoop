@@ -34,7 +34,7 @@ public class ClassWordDocsMapReduce {
 			int splitIndex1 = value.toString().indexOf(":");
 			int splitIndex2 = value.toString().indexOf(",");
 			String className = value.toString().substring(splitIndex1 + 1, splitIndex2);
-			StringTokenizer itr = new StringTokenizer(value.toString());
+			StringTokenizer itr = new StringTokenizer(value.toString().substring(splitIndex2 + 1));
 			Set<String> wordSet = new HashSet<String>();
 			while(itr.hasMoreTokens()){
 				wordSet.add(itr.nextToken());
