@@ -1,9 +1,12 @@
 package edu.whu.liwei.naivebayes;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 
 import org.apache.hadoop.conf.Configuration;
@@ -27,7 +30,12 @@ import edu.whu.liwei.naivebayes.mapreduce.DocClassPredicitonMapReduce;
 public class NaiveBayes {
 	
 	public static void train(PathConf pathConf) throws Exception {
-		System.out.println("Strat training...");
+		
+		String dateFormat = "HH:mm:ss:SSS";
+		SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+		// get begin time
+		long startTime = System.currentTimeMillis();
+		System.out.println("Strat training at " + sdf.format(new Date(startTime)));
 		
 		Configuration conf = new Configuration();
 
@@ -37,13 +45,21 @@ public class NaiveBayes {
 		
 		ConditionProbablilityMapReduce.run(conf, pathConf);		
 		
+		// get end time
+		long endTime = System.currentTimeMillis();
+		System.out.println("Finished training at " + sdf.format(new Date(endTime)));
+		System.out.println("Total cost " + (endTime - startTime)/1000.0 + "s");
 	}
 	
 	
 	
 	public static void evaluation(PathConf pathConf) throws Exception {
+		String dateFormat = "HH:mm:ss:SSS";
+		SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+		// get begin time
+		long startTime = System.currentTimeMillis();
 		// if jobCtrl doesn't all finished, block process
-		System.out.println("Start evaluating...");
+		System.out.println("Start predicting at " + sdf.format(new Date(startTime)));
 	
 		Configuration conf = new Configuration();
 		
@@ -53,13 +69,20 @@ public class NaiveBayes {
 		HashMap<String, String> docPredictionResult = new HashMap<String, String>();
 		FileSystem hdfs = FileSystem.get(conf);
 		SequenceFile.Reader reader = null;
-		reader = new SequenceFile.Reader(hdfs, new Path(pathConf.predictionResultPath), conf); 
+		reader = new SequenceFile.Reader(hdfs, new Path(pathConf.predictionResultPath + "/part-r-00000"), conf); 
 		Text key = (Text)ReflectionUtils.newInstance(reader.getKeyClass(), conf);
 		Text value = (Text)ReflectionUtils.newInstance(reader.getValueClass(), conf);
 		while (reader.next(key, value)) {
 			docPredictionResult.put(key.toString(), value.toString());
 		}
 		
+		// get end time
+		long endTime = System.currentTimeMillis();
+		System.out.println("Finished prediciton at " + sdf.format(new Date(endTime)));
+		System.out.println("Total cost " + (endTime - startTime)/1000.0 + "s");
+		
+		
+		System.out.println("Evaluating...");
 		// compare real label of doc and predict label
 		int right = 0, total = 0;
 		FSDataInputStream inputStream = hdfs.open(new Path(pathConf.testDataPath));
@@ -69,12 +92,14 @@ public class NaiveBayes {
 			int splitIndex1 = line.toString().indexOf(":");
 			int splitIndex2 = line.toString().indexOf(",");
 			String docId = line.toString().substring(0, splitIndex1);
-			String className = line.toString().substring(splitIndex1 + 1, splitIndex2 + 1);
+			String className = line.toString().substring(splitIndex1 + 1, splitIndex2);
 			if (docPredictionResult.get(docId).equals(className))
 				right++;
+			total++;
 		}
 		System.out.println("Accuracy: " + right + "/" + total + " = " + right/(double)total);
 	}
+	
 	
 	public static void main(String[] args) throws Exception {
 		
@@ -91,7 +116,7 @@ public class NaiveBayes {
 		}
 		
 		PathConf pathConf = new PathConf(args[0], args[1], args[2], args[3], args[4], args[5]);
-//		train(pathConf);
+		train(pathConf);
 		evaluation(pathConf);
 	}
 }

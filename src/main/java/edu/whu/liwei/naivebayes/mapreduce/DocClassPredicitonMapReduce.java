@@ -104,6 +104,7 @@ public class DocClassPredicitonMapReduce {
 	 */
 	public static boolean run(Configuration conf, PathConf pathConf) {
 		System.out.println("DocClassPredicitonMapReduce...");
+		System.out.println("Reading training data from " + pathConf.testDataPath);
 		try {
 			FileSystem hdfs = FileSystem.get(conf);
 		

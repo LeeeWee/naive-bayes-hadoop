@@ -55,6 +55,7 @@ public class ClassDocNumsMapReduce {
 	 */
 	public static boolean run(Configuration conf, PathConf pathConf) {
 		System.out.println("ClassNameDocNumsMapReduce...");
+		System.out.println("Reading training data from " + pathConf.trainingDataPath);
 		try {
 			FileSystem hdfs = FileSystem.get(conf);
 		
@@ -84,7 +85,6 @@ public class ClassDocNumsMapReduce {
 			return f;
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
